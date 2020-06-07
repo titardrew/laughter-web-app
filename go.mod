@@ -1,4 +1,4 @@
-module github.com/TutorialEdge/create-rest-api-in-go-tutorial
+module github.com/titardrew/laughter-web-app
 
 go 1.12
 
