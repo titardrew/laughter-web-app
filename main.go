@@ -77,7 +77,7 @@ func handleRequests() {
     myRouter.HandleFunc("/article", createNewArticle).Methods("POST")
     myRouter.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
     myRouter.HandleFunc("/article/{id}", returnSingleArticle)
-    log.Fatal(http.ListenAndServe(":10000", myRouter))
+    log.Fatal(http.ListenAndServe(":3000", myRouter))
 }
 
 func main() {
