@@ -1,5 +1,3 @@
-
-// main.go
 package main
 
 import (
@@ -15,17 +13,24 @@ import (
 
 // Article - Our struct for all articles
 type Article struct {
-    Id      string    `json:"Id"`
+    Id      string `json:"Id"`
     Title   string `json:"Title"`
     Desc    string `json:"desc"`
     Content string `json:"content"`
 }
 
+type User struct {
+    Id      string `json:"Id"`
+    History string `json:"history"`
+}
+
 var Articles []Article
+var Users []User
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the HomePage!")
+    //fmt.Fprintf(w, "Welcome to the HomePage!")
     fmt.Println("Endpoint Hit: homePage")
+    json.NewEncoder(w).Encode(Users)
 }
 
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +94,10 @@ func main() {
     Articles = []Article{
         Article{Id: "1", Title: "Hello", Desc: "Article Description", Content: "Article Content"},
         Article{Id: "2", Title: "Hello 2", Desc: "Article Description", Content: "Article Content"},
+    }
+    Users = []User{
+        User{Id: "0", History: "138;124"},
+        User{Id: "1", History: ""},
     }
     handleRequests()
 }
