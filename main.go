@@ -4,6 +4,7 @@ package main
 
 import (
     "encoding/json"
+    "os"
     "fmt"
     "log"
     "io/ioutil"
@@ -49,7 +50,7 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
     // unmarshal this into a new Article struct
     // append this to our Articles array.    
     reqBody, _ := ioutil.ReadAll(r.Body)
-    var article Article 
+    var article Article
     json.Unmarshal(reqBody, &article)
     // update our global Articles array to include
     // our new Article
@@ -77,7 +78,11 @@ func handleRequests() {
     myRouter.HandleFunc("/article", createNewArticle).Methods("POST")
     myRouter.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
     myRouter.HandleFunc("/article/{id}", returnSingleArticle)
-    log.Fatal(http.ListenAndServe(":3000", myRouter))
+    port := os.Getenv("PORT")
+    if len(port) == 0 {
+        port = "5000"
+    }
+    log.Fatal(http.ListenAndServe(":" + port, myRouter))
 }
 
 func main() {
