@@ -13,14 +13,6 @@ import (
     "github.com/gorilla/mux"
 )
 
-// Article - Our struct for all articles
-type Article struct {
-    Id      string `json:"Id"`
-    Title   string `json:"Title"`
-    Desc    string `json:"desc"`
-    Content string `json:"content"`
-}
-
 type User struct {
     Id        string   `json:"Id"`
     DeviceId  string   `json:"DeviceId"`
@@ -44,48 +36,110 @@ type Picture struct {
     Media       string    `json:"media"`
 }
 
+type PicRequest struct {
+    UserId string `json:"UserId"`
+    PicId  string `json:"PicId"`
+}
+
 type Pictures struct {
     Base []Picture `json:"db"`
 }
 
-var Articles []Article
-var Users []User
+type Users struct {
+    Base []User `json:"db"`
+}
+
+var UserDB Users
 var PictureDB Pictures
 
 func homePage(w http.ResponseWriter, r *http.Request) {
     fmt.Println("Endpoint Hit: homePage")
-    json.NewEncoder(w).Encode(PictureDB)
-}
-
-func returnAllArticles(w http.ResponseWriter, r *http.Request) {
-    fmt.Println("Endpoint Hit: returnAllArticles")
-    json.NewEncoder(w).Encode(Articles)
-}
-
-func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    key := vars["id"]
-
-    for _, article := range Articles {
-        if article.Id == key {
-            json.NewEncoder(w).Encode(article)
-        }
-    }
+    json.NewEncoder(w).Encode(UserDB.Base)
 }
 
 func returnMemeById(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    key := vars["id"]
-
-    for _, picture := range PictureDB.Base {
-        if picture.Id == key {
+    reqBody, _ := ioutil.ReadAll(r.Body)
+    var request PicRequest
+    var cur_user *User
+    json.Unmarshal(reqBody, &request)
+    idx := 0
+    for pic_idx, picture := range PictureDB.Base {
+        if picture.Id == request.PicId {
             json.NewEncoder(w).Encode(picture)
+            idx = pic_idx
         }
     }
+    for i_user, user := range UserDB.Base {
+        if user.Id == request.UserId {
+            cur_user = &UserDB.Base[i_user]
+        }
+    }
+
+    if cur_user != nil {
+        fmt.Println("User established")
+        fmt.Printf("Id: %s\n", cur_user.Id)
+        fmt.Printf("History: %s\n", cur_user.History)
+    } else {
+        fmt.Println("User is not established")
+    }
+
+    if cur_user != nil {
+        cur_user.History = append(cur_user.History, PictureDB.Base[idx].Id)
+    }
+
+    json.NewEncoder(w).Encode(PictureDB.Base[idx])
 }
 
 func returnMemeRandom(w http.ResponseWriter, r *http.Request) {
+    reqBody, _ := ioutil.ReadAll(r.Body)
+    var rec_request PicRequest
+    var cur_user *User
+
+    json.Unmarshal(reqBody, &rec_request)
+    for i_user, user := range UserDB.Base {
+        if user.Id == rec_request.UserId {
+            cur_user = &UserDB.Base[i_user]
+        }
+    }
+
+    if cur_user != nil {
+        fmt.Println("User established")
+        fmt.Printf("Id: %s\n", cur_user.Id)
+        fmt.Printf("History: %s\n", cur_user.History)
+    } else {
+        fmt.Println("User is not established")
+    }
+
     idx := rand.Intn(len(PictureDB.Base))
+    if cur_user != nil {
+        cur_user.History = append(cur_user.History, PictureDB.Base[idx].Id)
+    }
+    json.NewEncoder(w).Encode(PictureDB.Base[idx])
+}
+
+func returnMemeRecomended(w http.ResponseWriter, r *http.Request) {
+    reqBody, _ := ioutil.ReadAll(r.Body)
+    var rec_request PicRequest
+    var cur_user *User
+    json.Unmarshal(reqBody, &rec_request)
+    for i_user, user := range UserDB.Base {
+        if user.Id == rec_request.UserId {
+            cur_user = &UserDB.Base[i_user]
+        }
+    }
+
+    if cur_user != nil {
+        fmt.Println("User established. Generating recomendation...")
+        fmt.Printf("Id: %s\n", cur_user.Id)
+        fmt.Printf("History: %s\n", cur_user.History)
+    } else {
+        fmt.Println("User is not established. Generating random pic...")
+    }
+
+    idx := rand.Intn(len(PictureDB.Base))
+    if cur_user != nil {
+        cur_user.History = append(cur_user.History, PictureDB.Base[idx].Id)
+    }
     json.NewEncoder(w).Encode(PictureDB.Base[idx])
 }
 
@@ -96,61 +150,38 @@ func authorize(w http.ResponseWriter, r *http.Request) {
 
     if len(user.DeviceId) > 0 {
         known_user := false
-        for _, b_user := range Users {
+        for _, b_user := range UserDB.Base {
             if b_user.DeviceId == user.DeviceId {
                 known_user = true
                 user = b_user
                 break
             }
         }
-        if !known_user {
-            user.Id = strconv.Itoa(len(Users))
-            Users = append(Users, user)
+        if !known_user { // register
+            user.Id = strconv.Itoa(len(UserDB.Base))
+            UserDB.Base = append(UserDB.Base, user)
             fmt.Println("New user!")
         } else {
             fmt.Println("Known user!")
         }
     }
 
-    json.NewEncoder(w).Encode(Users)
+    json.NewEncoder(w).Encode(user)
 }
 
-func createNewArticle(w http.ResponseWriter, r *http.Request) {
-    // get the body of our POST request
-    // unmarshal this into a new Article struct
-    // append this to our Articles array.    
-    reqBody, _ := ioutil.ReadAll(r.Body)
-    var article Article
-    json.Unmarshal(reqBody, &article)
-    // update our global Articles array to include
-    // our new Article
-    Articles = append(Articles, article)
-
-    json.NewEncoder(w).Encode(article)
-}
-
-func deleteArticle(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    id := vars["id"]
-
-    for index, article := range Articles {
-        if article.Id == id {
-            Articles = append(Articles[:index], Articles[index+1:]...)
-        }
-    }
-
+func saveUserDB(w http.ResponseWriter, r *http.Request) {
+    jsonUserDB, _ := json.Marshal(UserDB)
+    ioutil.WriteFile("db/users_state.json", jsonUserDB, 0644)
 }
 
 func handleRequests() {
     myRouter := mux.NewRouter().StrictSlash(true)
     myRouter.HandleFunc("/", homePage)
-    myRouter.HandleFunc("/articles", returnAllArticles)
-    myRouter.HandleFunc("/article", createNewArticle).Methods("POST")
     myRouter.HandleFunc("/auth", authorize).Methods("POST")
     myRouter.HandleFunc("/meme/{id}", returnMemeById).Methods("Get")
-    myRouter.HandleFunc("/meme-random", returnMemeRandom)
-    myRouter.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
-    myRouter.HandleFunc("/article/{id}", returnSingleArticle)
+    myRouter.HandleFunc("/meme-random", returnMemeRandom).Methods("POST")
+    myRouter.HandleFunc("/meme-rec", returnMemeRecomended).Methods("POST")
+    myRouter.HandleFunc("/save-user-db", saveUserDB)
     port := os.Getenv("PORT")
     if len(port) == 0 {
         port = "5000"
@@ -160,17 +191,6 @@ func handleRequests() {
 }
 
 func main() {
-    Articles = []Article{
-        Article{Id: "1", Title: "Hello",
-                Desc: "Article Description", Content: "Article Content"},
-        Article{Id: "2", Title: "Hello 2",
-                Desc: "Article Description", Content: "Article Content"},
-    }
-    Users = []User{
-        User{Id: "0", DeviceId: "0x00013", History: []string{"138", "124"}},
-        User{Id: "1", DeviceId: "0x00014"},
-    }
-
     jsonFile, err := os.Open("db/pictures.json")
     if err != nil {
         fmt.Println(err)
@@ -179,5 +199,13 @@ func main() {
     json.Unmarshal(byteValue, &PictureDB)
     jsonFile.Close()
 
+    jsonFile, err = os.Open("db/users_state.json")
+    if err != nil {
+        fmt.Println("users_state.json was not found. Booting new one..")
+        jsonFile, err = os.Open("db/users.json")
+    }
+    byteValue, _ = ioutil.ReadAll(jsonFile)
+    json.Unmarshal(byteValue, &UserDB)
+    jsonFile.Close()
     handleRequests()
 }
