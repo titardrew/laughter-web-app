@@ -178,7 +178,7 @@ func handleRequests() {
     myRouter := mux.NewRouter().StrictSlash(true)
     myRouter.HandleFunc("/", homePage)
     myRouter.HandleFunc("/auth", authorize).Methods("POST")
-    myRouter.HandleFunc("/meme/{id}", returnMemeById).Methods("Get")
+    myRouter.HandleFunc("/meme/", returnMemeById).Methods("POST")
     myRouter.HandleFunc("/meme-random", returnMemeRandom).Methods("POST")
     myRouter.HandleFunc("/meme-rec", returnMemeRecomended).Methods("POST")
     myRouter.HandleFunc("/save-user-db", saveUserDB)
