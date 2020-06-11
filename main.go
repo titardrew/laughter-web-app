@@ -65,7 +65,7 @@ func returnMemeById(w http.ResponseWriter, r *http.Request) {
     idx := 0
     for pic_idx, picture := range PictureDB.Base {
         if picture.Id == request.PicId {
-            json.NewEncoder(w).Encode(picture)
+            //json.NewEncoder(w).Encode(picture)
             idx = pic_idx
         }
     }
