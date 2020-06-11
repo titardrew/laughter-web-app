@@ -11,6 +11,7 @@ import (
     "math/rand"
 
     "github.com/gorilla/mux"
+    "github.com/gorilla/handlers"
 )
 
 type User struct {
@@ -65,7 +66,6 @@ func returnMemeById(w http.ResponseWriter, r *http.Request) {
     idx := 0
     for pic_idx, picture := range PictureDB.Base {
         if picture.Id == request.PicId {
-            //json.NewEncoder(w).Encode(picture)
             idx = pic_idx
         }
     }
@@ -186,8 +186,13 @@ func handleRequests() {
     if len(port) == 0 {
         port = "5000"
     }
+    headersOk := handlers.AllowedHeaders([]string{"X-Requested-With",
+                                            "content-type", "Authorization"})
+    originsOk := handlers.AllowedOrigins([]string{"*"})
+    methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
-    log.Fatal(http.ListenAndServe(":" + port, myRouter))
+    log.Fatal(http.ListenAndServe(":" + port,
+              handlers.CORS(originsOk, headersOk, methodsOk)(myRouter)))
 }
 
 func main() {
